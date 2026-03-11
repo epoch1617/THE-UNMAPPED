@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE UNMAPPED</title>
+<!--
+  ·
+  ·
+  ·   you read source code.
+  ·   good.
+  ·
+  ·   the cartographer left three notes.
+  ·   you have found the first.
+  ·
+  ·   NOTE I:
+  ·   "every map is a lie. the territory precedes it.
+  ·    but the lie, repeated enough, becomes the land."
+  ·
+  ·   _found: true
+  ·   _notes_remaining: 2
+  ·   _look: elsewhere
+  ·
+  ·
+-->
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
+
+:root {
+  --void: #03050a;
+  --deep: #070d18;
+  --line: #1a2a4a;
+  --dim: #2a3f6a;
+  --ink: #4a7ab5;
+  --mid: #7aaad4;
+  --bright: #b8d4f0;
+  --white: #e8f0fa;
+  --gold: #c8a020;
+  --gold2: #f0c840;
+  --red: #a02020;
+  --serif: 'Libre Baskerville', serif;
+  --mono: 'Space Mono', monospace;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--void);
+  color: var(--mid);
+  font-family: var(--serif);
+  overflow-x: hidden;
+  cursor: crosshair;
+}
+
+/* ── GRAIN ── */
+body::after {
+  content:'';
+  position:fixed;
+  inset:0;
+  background:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  opacity:0.035;
+  pointer-events:none;
+  z-index:9000;
+}
+
+/* ── LOADER ── */
+#loader {
+  position:fixed; inset:0;
+  background:var(--void);
+  z-index:8000;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:16px;
+  transition:opacity 1.2s;
+}
+#loader.out { opacity:0; pointer-events:none; }
+.ld-title { font-family:var(--mono); font-size:10px; color:var(--dim); letter-spacing:0.5em; text-transform:uppercase; }
+.ld-bar { width:160px; height:1px; background:var(--line); }
+.ld-fill { height:100%; background:var(--ink); width:0; animation:ldf 2.8s cubic-bezier(.4,0,.2,1) forwards; }
+@keyframes ldf { 0%{width:0} 60%{width:60%} 85%{width:85%} 100%{width:100%} }
+.ld-sub { font-family:var(--mono); font-size:9px; color:var(--line); letter-spacing:0.3em; }
+
+/* ── PAGE ── */
+.pg { opacity:0; transition:opacity 1.5s; }
+.pg.on { opacity:1; }
+
+/* ── OPENING ── */
+#opening {
+  height:100vh;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  position:relative; overflow:hidden;
+}
+
+/* Animated cartographic grid */
+#map-canvas {
+  position:absolute; inset:0;
+  opacity:0.18;
+}
+
+.open-tag {
+  font-family:var(--mono); font-size:9px;
+  color:var(--dim); letter-spacing:0.6em;
+  text-transform:uppercase; margin-bottom:50px;
+  position:relative; z-index:2;
+}
+
+.open-title {
+  font-family:var(--serif);
+  font-size:clamp(52px,9vw,110px);
+  font-weight:700; font-style:italic;
+  color:var(--white);
+  letter-spacing:-0.02em;
+  line-height:0.85;
+  text-align:center;
+  position:relative; z-index:2;
+}
+.open-title .sub {
+  display:block;
+  font-size:0.25em;
+  font-weight:400; font-style:normal;
+  color:var(--dim);
+  letter-spacing:0.5em;
+  margin-top:22px;
+  text-transform:uppercase;
+}
+
+.open-rule { width:1px; height:60px; background:linear-gradient(to bottom,transparent,var(--ink),transparent); margin:36px auto; position:relative; z-index:2; }
+
+.open-epigraph {
+  font-family:var(--serif); font-style:italic;
+  font-size:clamp(13px,1.6vw,16px);
+  color:var(--ink); text-align:center;
+  max-width:420px; line-height:1.8;
+  position:relative; z-index:2;
+}
+
+.open-scroll {
+  position:absolute; bottom:36px; left:50%;
+  transform:translateX(-50%);
+  font-family:var(--mono); font-size:9px;
+  color:var(--dim); letter-spacing:0.4em;
+  z-index:2; animation:bob 2s ease-in-out infinite;
+}
+@keyframes bob { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(-7px)} }
+
+.vignette {
+  position:absolute; inset:0;
+  background:radial-gradient(ellipse at center, transparent 20%, var(--void) 75%);
+  z-index:1;
+}
+
+/* ── SECTIONS ── */
+.wrap { max-width:860px; margin:0 auto; padding:80px 40px; }
+
+.sec-num {
+  font-family:var(--mono); font-size:9px;
+  color:var(--dim); letter-spacing:0.5em;
+  text-transform:uppercase; margin-bottom:50px;
+  display:flex; align-items:center; gap:16px;
+}
+.sec-num::before { content:''; width:30px; height:1px; background:var(--line); }
+.sec-num::after { content:''; flex:1; height:1px; background:linear-gradient(to right,var(--line),transparent); }
+
+.sec-h {
+  font-family:var(--serif); font-weight:700; font-style:italic;
+  font-size:clamp(26px,4vw,44px);
+  color:var(--white); line-height:1.15; margin-bottom:20px;
+}
+.sec-p {
+  font-family:var(--serif); font-size:clamp(14px,1.7vw,17px);
+  color:var(--mid); line-height:1.85; max-width:620px;
+}
+.sec-p em { color:var(--bright); font-style:italic; }
+
+.rule { width:100%; height:1px; background:linear-gradient(to right,transparent,var(--line),transparent); }
+
+/* ── FRAGMENTS ── */
+.fragments {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+  gap:1px; margin:50px 0;
+}
+.frag {
+  background:var(--deep);
+  padding:28px 24px;
+  border:1px solid var(--line);
+  position:relative; overflow:hidden;
+  cursor:crosshair;
+  transition:border-color 0.3s, background 0.3s;
+}
+.frag:hover { border-color:var(--ink); background:#0a1420; }
+.frag::before {
+  content:attr(data-n);
+  position:absolute; top:14px; right:16px;
+  font-family:var(--mono); font-size:8px;
+  color:var(--line); letter-spacing:0.2em;
+}
+.frag-title {
+  font-family:var(--mono); font-size:9px;
+  color:var(--dim); letter-spacing:0.3em;
+  text-transform:uppercase; margin-bottom:14px;
+}
+.frag-body {
+  font-family:var(--serif); font-style:italic;
+  font-size:15px; color:var(--mid); line-height:1.6;
+}
+.frag.locked .frag-body { filter:blur(3px); opacity:0.4; user-select:none; }
+.frag.locked::after {
+  content:'LOCKED';
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--mono); font-size:9px;
+  color:var(--dim); letter-spacing:0.5em;
+  background:rgba(3,5,10,0.6);
+}
+
+/* ── THE CARTOGRAPHER ── */
+#portrait-section { padding:100px 0; text-align:center; position:relative; }
+
+.portrait-ring {
+  width:min(360px,70vw); height:min(360px,70vw);
+  border-radius:50%;
+  border:1px solid var(--line);
+  margin:50px auto;
+  position:relative;
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden;
+}
+.portrait-ring::before {
+  content:'';
+  position:absolute; inset:0;
+  background:conic-gradient(
+    from 0deg,
+    transparent 0deg, rgba(74,122,181,0.06) 45deg,
+    transparent 90deg, rgba(74,122,181,0.04) 135deg,
+    transparent 180deg, rgba(74,122,181,0.07) 225deg,
+    transparent 270deg, rgba(74,122,181,0.03) 315deg,
+    transparent 360deg
+  );
+  animation:slowspin 40s linear infinite;
+  border-radius:50%;
+}
+@keyframes slowspin { to{transform:rotate(360deg)} }
+
+.portrait-inner {
+  width:70%; height:70%;
+  border-radius:50%;
+  background:radial-gradient(ellipse at 40% 35%, #0d1a2e, #030508);
+  border:1px solid var(--line);
+  display:flex; align-items:center; justify-content:center;
+  position:relative; z-index:2;
+}
+
+/* SVG portrait of the cartographer */
+.portrait-label {
+  font-family:var(--mono); font-size:9px;
+  color:var(--dim); letter-spacing:0.4em;
+  margin-top:30px; text-align:center;
+}
+
+/* ── PUZZLE MECHANISM ── */
+#puzzle {
+  background:var(--deep);
+  border:1px solid var(--line);
+  padding:0; margin:50px 0;
+  position:relative;
+  font-family:var(--mono);
+}
+.puzzle-head {
+  padding:14px 20px;
+  border-bottom:1px solid var(--line);
+  display:flex; align-items:center; gap:10px;
+  background:rgba(74,122,181,0.04);
+}
+.ph-dot { width:8px; height:8px; border-radius:50%; }
+.ph-dot.b { background:var(--red); }
+.ph-dot.m { background:#444; }
+.ph-dot.g { background:#1a3a1a; }
+.ph-title { font-size:9px; color:var(--dim); letter-spacing:0.3em; margin-left:6px; }
+
+.puzzle-body { padding:28px; }
+.puz-line { font-size:11px; color:var(--dim); line-height:2.4; letter-spacing:0.05em; }
+.puz-line.hi { color:var(--mid); }
+.puz-line.gold { color:var(--gold); }
+.puz-line.bright { color:var(--bright); }
+.puz-line.red { color:var(--red); }
+.puz-gap { height:10px; }
+
+.puz-input-wrap { display:flex; align-items:center; gap:10px; border-top:1px solid var(--line); padding:16px 0 0; margin-top:10px; }
+.puz-prompt { color:var(--gold2); font-size:11px; }
+#puz-input {
+  flex:1; background:none; border:none; outline:none;
+  color:var(--white); font-family:var(--mono); font-size:11px;
+  letter-spacing:0.08em; caret-color:var(--gold2);
+}
+.puz-blink { width:7px; height:13px; background:var(--gold2); animation:blink 1s step-end infinite; }
+@keyframes blink { 50%{opacity:0} }
+
+#puz-output { margin-top:0; }
+
+/* ── THE MAP ── */
+#map-section { padding:100px 40px; }
+#interactive-map {
+  width:100%; aspect-ratio:16/9;
+  border:1px solid var(--line);
+  background:var(--deep);
+  position:relative; overflow:hidden;
+  cursor:crosshair;
+  max-height:500px;
+}
+
+/* ── TERRITORIES ── */
+.territory {
+  position:absolute;
+  font-family:var(--mono); font-size:8px;
+  color:var(--dim); letter-spacing:0.3em;
+  text-transform:uppercase;
+  cursor:crosshair;
+  transition:color 0.3s;
+}
+.territory:hover { color:var(--mid); }
+.territory.found { color:var(--ink); }
+
+/* ── COORDINATES DISPLAY ── */
+.map-coords {
+  position:absolute; bottom:12px; right:16px;
+  font-family:var(--mono); font-size:9px;
+  color:var(--dim); letter-spacing:0.2em;
+  pointer-events:none;
+}
+
+/* ── CIPHER WALL ── */
+#cipher-wall { padding:80px 40px; background:var(--deep); position:relative; }
+
+.cipher-display {
+  font-family:var(--mono);
+  font-size:clamp(11px,1.4vw,14px);
+  color:var(--dim);
+  line-height:2.2;
+  letter-spacing:0.12em;
+  word-break:break-all;
+  padding:30px;
+  border:1px solid var(--line);
+  position:relative;
+  margin:40px 0;
+}
+.cipher-display::before {
+  content:'ENCIPHERED · DO NOT ATTEMPT TO READ DIRECTLY';
+  position:absolute; top:-10px; left:20px;
+  font-size:8px; color:var(--line);
+  background:var(--deep); padding:0 8px;
+  letter-spacing:0.3em;
+}
+
+.cipher-key {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  gap:1px; margin:30px 0;
+}
+.ck-item {
+  background:rgba(7,13,24,0.8);
+  padding:16px 18px;
+  border:1px solid var(--line);
+  cursor:crosshair;
+  transition:border-color 0.2s;
+}
+.ck-item:hover { border-color:var(--ink); }
+.ck-sym { font-family:var(--mono); font-size:18px; color:var(--mid); margin-bottom:6px; }
+.ck-val { font-family:var(--mono); font-size:9px; color:var(--dim); letter-spacing:0.2em; }
+.ck-item.revealed .ck-val { color:var(--gold); }
+
+/* ── FINAL GATE ── */
+#final-gate {
+  min-height:100vh;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  padding:80px 40px;
+  position:relative; overflow:hidden;
+  text-align:center;
+}
+
+.gate-bg {
+  position:absolute; inset:0;
+  background:radial-gradient(ellipse at center, #0a1520 0%, var(--void) 70%);
+}
+
+.gate-rings {
+  position:absolute;
+  width:min(600px,90vw); height:min(600px,90vw);
+  top:50%; left:50%;
+  transform:translate(-50%,-50%);
+}
+.gr { position:absolute; border-radius:50%; border:1px solid; top:50%; left:50%; transform:translate(-50%,-50%); }
+.gr-1 { width:100%;height:100%;border-color:rgba(74,122,181,0.06);animation:slowspin 90s linear infinite; }
+.gr-2 { width:75%;height:75%;border-color:rgba(74,122,181,0.08);animation:slowspin 60s linear infinite reverse; }
+.gr-3 { width:50%;height:50%;border-color:rgba(74,122,181,0.12);animation:slowspin 40s linear infinite; }
+.gr-4 { width:30%;height:30%;border-color:rgba(200,160,32,0.15);animation:slowspin 25s linear infinite reverse; }
+
+.gate-status {
+  font-family:var(--mono); font-size:9px;
+  color:var(--red); letter-spacing:0.5em;
+  text-transform:uppercase; margin-bottom:40px;
+  position:relative; z-index:2;
+  animation:blink 2s step-end infinite;
+}
+
+.gate-title {
+  font-family:var(--serif); font-weight:700; font-style:italic;
+  font-size:clamp(32px,5vw,60px);
+  color:var(--white); line-height:1.1;
+  position:relative; z-index:2;
+  margin-bottom:16px;
+}
+.gate-sub {
+  font-family:var(--mono); font-size:10px;
+  color:var(--dim); letter-spacing:0.3em;
+  position:relative; z-index:2;
+  margin-bottom:60px;
+}
+
+.gate-requirement {
+  background:rgba(7,13,24,0.9);
+  border:1px solid var(--line);
+  padding:40px 50px;
+  position:relative; z-index:2;
+  max-width:500px;
+  margin:0 auto 40px;
+}
+.req-label {
+  font-family:var(--mono); font-size:9px;
+  color:var(--dim); letter-spacing:0.4em;
+  text-transform:uppercase; margin-bottom:24px;
+}
+.req-amount {
+  font-family:var(--serif); font-weight:700;
+  font-size:clamp(28px,5vw,52px);
+  color:var(--gold2); line-height:1;
+  margin-bottom:8px;
+}
+.req-token {
+  font-family:var(--mono); font-size:10px;
+  color:var(--gold); letter-spacing:0.3em;
+  margin-bottom:24px;
+}
+.req-wallet {
+  font-family:var(--mono); font-size:10px;
+  color:var(--dim); letter-spacing:0.1em;
+  word-break:break-all; line-height:1.8;
+  border-top:1px solid var(--line);
+  padding-top:20px; margin-top:16px;
+}
+.req-wallet span { color:var(--mid); }
+.req-note {
+  font-family:var(--serif); font-style:italic;
+  font-size:13px; color:var(--dim); line-height:1.7;
+  margin-top:20px;
+}
+
+.gate-lore {
+  font-family:var(--serif); font-style:italic;
+  font-size:clamp(13px,1.6vw,16px);
+  color:var(--ink); max-width:480px;
+  margin:0 auto; line-height:1.9;
+  position:relative; z-index:2;
+}
+
+/* ── WHAT WAITS ── */
+.locked-prize {
+  background:rgba(3,5,10,0.95);
+  border:1px solid rgba(200,160,32,0.15);
+  padding:30px 40px;
+  max-width:460px;
+  margin:30px auto 0;
+  position:relative; z-index:2;
+  filter:blur(4px);
+  transition:filter 1s;
+}
+.locked-prize.open { filter:blur(0); }
+.lp-label { font-family:var(--mono); font-size:9px; color:var(--gold); letter-spacing:0.4em; margin-bottom:16px; }
+.lp-text { font-family:var(--serif); font-style:italic; font-size:15px; color:var(--white); line-height:1.7; }
+
+/* ── VERIFICATION ── */
+#verify-box {
+  background:var(--deep); border:1px solid var(--line);
+  padding:0; max-width:500px; margin:40px auto 0;
+  font-family:var(--mono); position:relative; z-index:2;
+}
+.vb-head { padding:12px 18px; border-bottom:1px solid var(--line); font-size:9px; color:var(--dim); letter-spacing:0.3em; background:rgba(74,122,181,0.04); }
+.vb-body { padding:22px; }
+.vb-row { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+.vb-label { font-size:9px; color:var(--dim); letter-spacing:0.2em; width:80px; flex-shrink:0; }
+.vb-inp {
+  flex:1; background:rgba(3,5,10,0.8); border:1px solid var(--line);
+  padding:8px 12px; color:var(--white); font-family:var(--mono);
+  font-size:11px; outline:none; transition:border-color 0.2s;
+}
+.vb-inp:focus { border-color:var(--ink); }
+.vb-btn {
+  width:100%; padding:12px; background:none;
+  border:1px solid var(--ink); color:var(--mid);
+  font-family:var(--mono); font-size:10px;
+  letter-spacing:0.4em; cursor:pointer;
+  transition:all 0.3s; text-transform:uppercase;
+  margin-top:8px;
+}
+.vb-btn:hover { background:var(--ink); color:var(--void); }
+#vb-result { font-size:10px; color:var(--dim); letter-spacing:0.2em; min-height:20px; margin-top:10px; line-height:1.8; }
+
+/* ── SIGNATURE ── */
+#sig { padding:60px 40px; text-align:center; }
+.sig-line { font-family:var(--mono); font-size:9px; color:var(--line); letter-spacing:0.3em; line-height:2.8; }
+.sig-line a { color:var(--dim); text-decoration:none; }
+
+/* Reveal animation */
+.reveal { opacity:0; transform:translateY(24px); transition:opacity 0.7s ease, transform 0.7s ease; }
+.reveal.on { opacity:1; transform:translateY(0); }
+
+@media(max-width:600px){
+  .wrap,.cipher-wall,.sec-p{ padding-left:24px; padding-right:24px; }
+  .gate-requirement{ padding:28px 24px; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="ld-title">The Unmapped</div>
+  <div class="ld-bar"><div class="ld-fill"></div></div>
+  <div class="ld-sub" id="ld-sub">locating territory</div>
+</div>
+
+<div class="pg" id="pg">
+
+<!-- ══ OPENING ══════════════════════════════════ -->
+<section id="opening">
+  <canvas id="map-canvas"></canvas>
+  <div class="vignette"></div>
+
+  <div class="open-tag">The Unmapped · A Cartographer's Last Problem</div>
+
+  <h1 class="open-title">
+    Terra<br>Incognita
+    <span>Here be things that have no name yet</span>
+  </h1>
+
+  <div class="open-rule"></div>
+
+  <p class="open-epigraph">
+    A cartographer spent forty years mapping territories<br>
+    that did not want to be found.<br>
+    On the last day, he made one final map.<br>
+    He hid it inside the problem of finding it.
+  </p>
+
+  <div class="open-scroll">↓ · enter · ↓</div>
+</section>
+
+<div class="rule"></div>
+
+<!-- ══ WHAT THIS IS ══════════════════════════════ -->
+<div class="wrap">
+  <div class="sec-num">I · The Territory</div>
+  <h2 class="sec-h">A map that maps itself.</h2>
+  <p class="sec-p">
+    Most puzzles give you a problem and wait for you to solve it.<br><br>
+    This one gives you <em>a territory</em>. The territory is real. The borders shift depending on where you stand. Some regions only appear if you look away from them.<br><br>
+    The cartographer left six fragments. Five are visible. One requires passage through the final gate.<br><br>
+    Read the fragments in any order. The territory does not care about sequence. Only about <em>depth of entry</em>.
+  </p>
+</div>
+
+<div class="rule"></div>
+
+<!-- ══ FRAGMENTS ══════════════════════════════════ -->
+<div class="wrap">
+  <div class="sec-num">II · The Six Fragments</div>
+  <h2 class="sec-h">What the cartographer left behind.</h2>
+
+  <div class="fragments">
+    <div class="frag reveal" data-n="I">
+      <div class="frag-title">The First Country</div>
+      <div class="frag-body">"I named a country once. The country did not survive the naming. This taught me something about names."</div>
+    </div>
+    <div class="frag reveal" data-n="II">
+      <div class="frag-title">The Instrument</div>
+      <div class="frag-body">"Every instrument of measurement changes what it measures. The compass magnetises the thing it points at."</div>
+    </div>
+    <div class="frag reveal" data-n="III">
+      <div class="frag-title">The Border Problem</div>
+      <div class="frag-body">"A border is an argument two territories are having. The cartographer does not take sides. He draws the argument."</div>
+    </div>
+    <div class="frag reveal" data-n="IV">
+      <div class="frag-title">The Unmappable</div>
+      <div class="frag-body">"There is one territory I never mapped. Not because I couldn't find it. Because once you map it, it moves."</div>
+    </div>
+    <div class="frag reveal" data-n="V">
+      <div class="frag-title">The Legend</div>
+      <div class="frag-body">"The legend of a map explains the symbols. What explains the legend? I have been asking this for forty years."</div>
+    </div>
+    <div class="frag locked reveal" data-n="VI">
+      <div class="frag-title">The Sixth Fragment</div>
+      <div class="frag-body">The territory beyond the gate. The cartographer's final note. Unlocked by passage through the final gate.</div>
+    </div>
+  </div>
+</div>
+
+<div class="rule"></div>
+
+<!-- ══ THE MAP ══════════════════════════════════ -->
+<section id="map-section" class="reveal">
+  <div class="wrap" style="padding-bottom:0">
+    <div class="sec-num">III · The Interactive Map</div>
+    <h2 class="sec-h">Territories of the unmapped world.</h2>
+    <p class="sec-p" style="margin-bottom:40px">
+      Seven territories. Three are visible to all travellers. Two reveal themselves only to those who have read the fragments carefully. One moves when you look directly at it.
+    </p>
+  </div>
+
+  <div id="interactive-map">
+    <canvas id="territory-canvas" style="position:absolute;inset:0;width:100%;height:100%"></canvas>
+    <div class="map-coords" id="map-coords">— · —</div>
+  </div>
+
+  <div class="wrap" style="padding-top:20px;padding-bottom:0">
+    <div style="font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:0.2em;line-height:2.2" id="territory-info">
+      Move across the map. Some territories speak only when you have been still long enough.
+    </div>
+  </div>
+</section>
+
+<div class="rule" style="margin-top:80px"></div>
+
+<!-- ══ CIPHER WALL ══════════════════════════════ -->
+<section id="cipher-wall" class="reveal">
+  <div class="wrap">
+    <div class="sec-num">IV · The Cartographer's Cipher</div>
+    <h2 class="sec-h">He encoded his route.</h2>
+    <p class="sec-p">
+      Before the cartographer departed on his final expedition, he encoded the route using a system he invented: each symbol maps to a letter, but the mapping shifts based on the <em>territory you are currently in</em>.
+      The cipher below is solvable. It contains a coordinate. The coordinate matters.
+    </p>
+
+    <div class="cipher-display" id="cipher-display">
+⌖ △ ⊕ ◈ ⌀ · ⊗ △ ⌖ ◉ · ⊕ ⌀ ⊗ △ ◈ ⊕ ·<br>
+◉ ⌖ ⊗ · ⌀ △ ⊕ ◈ · ⊗ ◉ ⌖ △ ·<br>
+⊕ ◈ ⌀ ⊗ △ · ◉ ⌖ ⊕ · ⌀ ◈ ⊗ ·<br>
+△ ⊕ ⌖ ◈ ⌀ · ⊗ ◉ △ ⊕ · ◈ ⌀ ⊗ ⊕ ◉
+    </div>
+
+    <div style="font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:0.3em;margin-bottom:20px">
+      SYMBOL KEY · HOVER EACH SYMBOL TO REVEAL ITS TERRITORY-MAPPING
+    </div>
+
+    <div class="cipher-key">
+      <div class="ck-item" id="ck1" onclick="revealKey(this,'⌖','T / E / A  (shifts by territory)')">
+        <div class="ck-sym">⌖</div>
+        <div class="ck-val">???</div>
+      </div>
+      <div class="ck-item" id="ck2" onclick="revealKey(this,'△','H / O / R  (shifts by territory)')">
+        <div class="ck-sym">△</div>
+        <div class="ck-val">???</div>
+      </div>
+      <div class="ck-item" id="ck3" onclick="revealKey(this,'⊕','E / N / I  (shifts by territory)')">
+        <div class="ck-sym">⊕</div>
+        <div class="ck-val">???</div>
+      </div>
+      <div class="ck-item" id="ck4" onclick="revealKey(this,'◈','  ·  ·  (space)')">
+        <div class="ck-sym">◈</div>
+        <div class="ck-val">???</div>
+      </div>
+      <div class="ck-item" id="ck5" onclick="revealKey(this,'⌀','C / S / T  (shifts by territory)')">
+        <div class="ck-sym">⌀</div>
+        <div class="ck-val">???</div>
+      </div>
+      <div class="ck-item" id="ck6" onclick="revealKey(this,'⊗','I / M / O  (shifts by territory)')">
+        <div class="ck-sym">⊗</div>
+        <div class="ck-val">???</div>
+      </div>
+      <div class="ck-item" id="ck7" onclick="revealKey(this,'◉','S / L / N  (shifts by territory)')">
+        <div class="ck-sym">◉</div>
+        <div class="ck-val">???</div>
+      </div>
+    </div>
+
+    <div style="font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:0.2em;line-height:2;margin-top:10px">
+      NOTE: The full cipher decodes to a sentence. The sentence contains a number. The number is not the answer. The number points at the answer.
+    </div>
+  </div>
+</section>
+
+<div class="rule"></div>
+
+<!-- ══ PUZZLE TERMINAL ══════════════════════════ -->
+<div class="wrap reveal">
+  <div class="sec-num">V · The Navigator's Terminal</div>
+  <h2 class="sec-h">Submit your coordinates.</h2>
+  <p class="sec-p" style="margin-bottom:40px">The terminal accepts coordinates, territories, and passages. It has a long memory.</p>
+
+  <div id="puzzle">
+    <div class="puzzle-head">
+      <div class="ph-dot b"></div><div class="ph-dot m"></div><div class="ph-dot g"></div>
+      <div class="ph-title">NAVIGATOR TERMINAL · THE UNMAPPED · EXPEDITION LOG</div>
+    </div>
+    <div class="puzzle-body" id="puzzle-body">
+      <div class="puz-line">$ expedition log initialised</div>
+      <div class="puz-line">$ cartographer status: <span style="color:#a02020">departed</span></div>
+      <div class="puz-line">$ fragments recovered: <span style="color:var(--gold)">5 / 6</span></div>
+      <div class="puz-line">$ final gate: <span style="color:#a02020">sealed</span></div>
+      <div class="puz-gap"></div>
+      <div class="puz-line hi">$ the cartographer left one instruction:</div>
+      <div class="puz-line bright">  "do not try to read the territory. try to <em>enter</em> it."</div>
+      <div class="puz-gap"></div>
+      <div class="puz-line">$ known coordinates: <span style="color:var(--gold)">awaiting navigator input</span></div>
+      <div class="puz-gap"></div>
+      <div id="puz-output"></div>
+      <div class="puz-input-wrap">
+        <span class="puz-prompt">$</span>
+        <input id="puz-input" type="text" placeholder="enter coordinate or passage..." autocomplete="off" spellcheck="false"/>
+        <div class="puz-blink"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="rule"></div>
+
+<!-- ══ FINAL GATE ══════════════════════════════ -->
+<section id="final-gate">
+  <div class="gate-bg"></div>
+  <div class="gate-rings">
+    <div class="gr gr-1"></div>
+    <div class="gr gr-2"></div>
+    <div class="gr gr-3"></div>
+    <div class="gr gr-4"></div>
+  </div>
+
+  <div class="gate-status">⬛ GATE STATUS: SEALED ⬛</div>
+
+  <h2 class="gate-title">The Final Territory</h2>
+  <div class="gate-sub">The cartographer's last map. Fragment VI. The answer to the legend.</div>
+
+  <div class="gate-requirement reveal">
+    <div class="req-label">Passage Requirement</div>
+    <div class="req-amount">1,000,000</div>
+    <div class="req-token">$LOBSTAR · Solana Network</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:0.2em;margin-bottom:16px;line-height:1.8">
+      The cartographer did not believe in free passage.<br>
+      The territory costs what the territory costs.
+    </div>
+    <div class="req-wallet">
+      Send to:<br>
+      <span>7M9ddvAfmoDpAvcTeH3NymmC4Ud75LjoYSKEEt9fuEJ2</span>
+    </div>
+    <div class="req-note">
+      After sending, enter your transaction signature and wallet address below. The gate checks the ledger. The ledger does not lie.
+    </div>
+  </div>
+
+  <div class="gate-lore reveal">
+    "The final territory is not a reward for solving the puzzle.<br>
+    It is the puzzle itself, seen from the other side.<br>
+    Most people never find out what was on the other side.<br>
+    <em>That is also part of the territory.</em>"
+  </div>
+
+  <div class="locked-prize reveal" id="locked-prize">
+    <div class="lp-label">Fragment VI · The Cartographer's Final Note</div>
+    <div class="lp-text" id="fragment-vi">
+      "The map I was trying to make was not of any place.<br>
+      It was of the distance between the question and the person asking it.<br>
+      That distance is exactly the size of a human life.<br>
+      I measured it. It took forty years.<br>
+      You have just measured it too.<br>
+      Welcome to the territory."<br><br>
+      — The Cartographer
+    </div>
+  </div>
+
+  <div id="verify-box" class="reveal">
+    <div class="vb-head">Gate Verification · Submit Transaction</div>
+    <div class="vb-body">
+      <div class="vb-row">
+        <div class="vb-label">TX SIG</div>
+        <input class="vb-inp" id="vb-tx" placeholder="Solana transaction signature..." autocomplete="off"/>
+      </div>
+      <div class="vb-row">
+        <div class="vb-label">WALLET</div>
+        <input class="vb-inp" id="vb-wallet" placeholder="Your Solana wallet address..." autocomplete="off"/>
+      </div>
+      <button class="vb-btn" onclick="verifyGate()">Verify Passage</button>
+      <div id="vb-result"></div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ══ SIGNATURE ══════════════════════════════ -->
+<section id="sig">
+  <div class="rule" style="margin-bottom:50px"></div>
+  <div class="sig-line">
+    THE UNMAPPED · AN ORIGINAL WORK · 2026<br>
+    MADE FOR THE ONE WHO READS SOURCE CODE<br>
+    AND FINDS NOTES THAT WERE LEFT FOR HIM<br><br>
+    @DIONIO99 · EPOCH 1617<br>
+    <span style="opacity:0.4;font-size:9px">type 'terra' anywhere on this page</span>
+  </div>
+</section>
+
+</div><!-- end .pg -->
+
+<script>
+// ── LOADER ────────────────────────────────────
+const ldmsgs=['locating territory...','reading cartographer notes...','parsing cipher symbols...','fragment V recovered...','gate: sealed','navigator: ready'];
+let ldi=0;
+const ldsub=document.getElementById('ld-sub');
+const ldiv=setInterval(()=>{ ldsub.textContent=ldmsgs[Math.min(++ldi,ldmsgs.length-1)]; },420);
+setTimeout(()=>{
+  clearInterval(ldiv);
+  document.getElementById('loader').classList.add('out');
+  setTimeout(()=>{
+    document.getElementById('loader').style.display='none';
+    document.getElementById('pg').classList.add('on');
+    initCanvas(); initMap(); initReveal();
+  },1200);
+},2900);
+
+// ── CARTOGRAPHIC GRID CANVAS ────────────────
+function initCanvas(){
+  const canvas=document.getElementById('map-canvas');
+  const ctx=canvas.getContext('2d');
+  function resize(){ canvas.width=canvas.offsetWidth; canvas.height=canvas.offsetHeight; }
+  resize(); window.addEventListener('resize',resize);
+
+  let t=0;
+  function draw(){
+    const W=canvas.width, H=canvas.height;
+    ctx.clearRect(0,0,W,H);
+
+    // Meridian lines
+    ctx.strokeStyle='rgba(74,122,181,0.15)';
+    ctx.lineWidth=0.5;
+    const spacing=60;
+    const offsetX=(t*0.3)%spacing;
+    const offsetY=(t*0.15)%spacing;
+
+    for(let x=-spacing+offsetX;x<W+spacing;x+=spacing){
+      ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x+H*0.2,H); ctx.stroke();
+    }
+    for(let y=-spacing+offsetY;y<H+spacing;y+=spacing){
+      ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y+W*0.05); ctx.stroke();
+    }
+
+    // Coordinate markers
+    ctx.fillStyle='rgba(74,122,181,0.3)';
+    ctx.font='8px Space Mono, monospace';
+    for(let x=0;x<W;x+=spacing){
+      for(let y=0;y<H;y+=spacing){
+        const px=(x+offsetX)%W;
+        const py=(y+offsetY)%H;
+        ctx.beginPath(); ctx.arc(px,py,1.2,0,Math.PI*2); ctx.fill();
+      }
+    }
+
+    // Contour lines (animated circles)
+    ctx.strokeStyle='rgba(74,122,181,0.05)';
+    ctx.lineWidth=1;
+    const cx=W/2, cy=H/2;
+    for(let r=50;r<Math.max(W,H);r+=80){
+      const wobble=Math.sin(t*0.01+r*0.01)*15;
+      ctx.beginPath();
+      ctx.ellipse(cx,cy,r+wobble,r*0.6+wobble*0.5,t*0.002,0,Math.PI*2);
+      ctx.stroke();
+    }
+
+    t++;
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ── INTERACTIVE MAP ──────────────────────────
+const territories_data=[
+  {name:'THE FIRST COUNTRY',x:0.12,y:0.2,note:'Named once. Did not survive the naming.',visible:true,found:false},
+  {name:'THE INSTRUMENT BAY',x:0.35,y:0.6,note:'Where the compass magnetises what it points at.',visible:true,found:false},
+  {name:'THE BORDER REGION',x:0.58,y:0.3,note:'An argument two territories are having.',visible:true,found:false},
+  {name:'THE UNMAPPABLE',x:0.78,y:0.7,note:'It moves when you look directly at it.',visible:false,found:false},
+  {name:'THE LEGEND FIELDS',x:0.25,y:0.8,note:'What explains the legend? Forty years of asking.',visible:false,found:false},
+  {name:'TERRA INCOGNITA',x:0.88,y:0.18,note:'Here be things that have no name yet.',visible:true,found:false},
+  {name:'THE GATE',x:0.5,y:0.5,note:'The passage. It is in the centre because all things are.',visible:true,found:false},
+];
+
+let mouseX=0.5, mouseY=0.5, mapRevealTimer=0, stillTimer=0, lastMove=Date.now();
+
+function initMap(){
+  const mapEl=document.getElementById('interactive-map');
+  const canvas=document.getElementById('territory-canvas');
+  const ctx=canvas.getContext('2d');
+  const coords=document.getElementById('map-coords');
+  const info=document.getElementById('territory-info');
+
+  function resize(){
+    canvas.width=mapEl.offsetWidth;
+    canvas.height=mapEl.offsetHeight;
+  }
+  resize();
+  window.addEventListener('resize',resize);
+
+  mapEl.addEventListener('mousemove',e=>{
+    const r=mapEl.getBoundingClientRect();
+    mouseX=(e.clientX-r.left)/r.width;
+    mouseY=(e.clientY-r.top)/r.height;
+    lastMove=Date.now();
+    const lon=((mouseX*360)-180).toFixed(2);
+    const lat=((0.5-mouseY)*180).toFixed(2);
+    coords.textContent=`${lat}° ${lat>=0?'N':'S'} · ${Math.abs(lon)}° ${lon>=0?'E':'W'}`;
+  });
+
+  let drawT=0;
+  function drawMap(){
+    const W=canvas.width, H=canvas.height;
+    ctx.clearRect(0,0,W,H);
+
+    // Subtle grid
+    ctx.strokeStyle='rgba(26,42,74,0.5)';
+    ctx.lineWidth=0.5;
+    for(let x=0;x<W;x+=W/12){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+    for(let y=0;y<H;y+=H/8){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+    // Contour shapes
+    ctx.strokeStyle='rgba(74,122,181,0.06)';
+    ctx.lineWidth=1;
+    for(let i=0;i<5;i++){
+      ctx.beginPath();
+      ctx.ellipse(W*0.3+Math.sin(drawT*0.005+i)*W*0.05, H*0.4, W*0.12+i*W*0.04, H*0.1+i*H*0.04, 0.3, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(W*0.7, H*0.6+Math.cos(drawT*0.006+i)*H*0.03, W*0.1+i*W*0.03, H*0.08+i*H*0.03, -0.2, 0, Math.PI*2);
+      ctx.stroke();
+    }
+
+    // Reveal hidden territories based on stillness
+    const stillMs=Date.now()-lastMove;
+    if(stillMs>2000){
+      territories_data[3].visible=true; // The Unmappable
+    }
+    if(stillMs>4000){
+      territories_data[4].visible=true; // Legend Fields
+    }
+    // The Unmappable moves
+    if(territories_data[3].visible){
+      territories_data[3].x=0.5+Math.sin(drawT*0.008)*0.3;
+      territories_data[3].y=0.3+Math.cos(drawT*0.006)*0.3;
+    }
+
+    // Draw territories
+    territories_data.forEach((t,i)=>{
+      if(!t.visible) return;
+      const tx=t.x*W, ty=t.y*H;
+      const dist=Math.sqrt((mouseX-t.x)**2+(mouseY-t.y)**2);
+      const hover=dist<0.1;
+
+      // Territory dot
+      ctx.beginPath();
+      ctx.arc(tx,ty,hover?5:3,0,Math.PI*2);
+      ctx.fillStyle=hover?'rgba(74,122,181,0.9)':'rgba(74,122,181,0.4)';
+      ctx.fill();
+
+      // Pulse ring
+      const pulse=(Math.sin(drawT*0.05+i*1.2)+1)*0.5;
+      ctx.beginPath();
+      ctx.arc(tx,ty,8+pulse*8,0,Math.PI*2);
+      ctx.strokeStyle=`rgba(74,122,181,${0.1+pulse*0.1})`;
+      ctx.lineWidth=0.8;
+      ctx.stroke();
+
+      // Label
+      ctx.font=`${hover?'bold ':''
+}9px Space Mono, monospace`;
+      ctx.fillStyle=hover?'rgba(184,212,240,0.9)':'rgba(74,122,181,0.5)';
+      ctx.letterSpacing='0.2em';
+      ctx.fillText(t.name,tx+12,ty+4);
+
+      if(hover){
+        info.textContent=`Territory: ${t.name} · "${t.note}"`;
+        if(!t.found){ t.found=true; }
+      }
+    });
+
+    // Cursor crosshair on map
+    ctx.strokeStyle='rgba(74,122,181,0.3)';
+    ctx.lineWidth=0.5;
+    const cx=mouseX*W, cy=mouseY*H;
+    ctx.beginPath(); ctx.moveTo(cx-15,cy); ctx.lineTo(cx+15,cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx,cy-15); ctx.lineTo(cx,cy+15); ctx.stroke();
+
+    drawT++;
+    requestAnimationFrame(drawMap);
+  }
+  drawMap();
+}
+
+// ── CIPHER KEY REVEAL ────────────────────────
+function revealKey(el,sym,val){
+  el.querySelector('.ck-val').textContent=val;
+  el.classList.add('revealed');
+}
+
+// ── TERMINAL ────────────────────────────────
+const responses={
+  'the first country':{t:'→ Territory I located. Fragment I confirmed: "names destroy what they name."',c:'gold'},
+  'the instrument bay':{t:'→ Territory II located. The compass reading: 38.7° · the instrument has changed.',c:'gold'},
+  'the border region':{t:'→ Territory III located. Two territories, one argument. Neither side is wrong.',c:'gold'},
+  'terra incognita':{t:'→ Territory VI located. Here be things. The cartographer was here last.',c:'gold'},
+  'the gate':{t:'→ Territory VII located. It is in the centre. All things are. The gate is sealed. 1,000,000 $LOBSTAR required.',c:'gold'},
+  'the unmappable':{t:'→ Territory IV partially located. Warning: it moves when observed directly. Approach indirectly.',c:'hi'},
+  'the legend fields':{t:'→ Territory V located. "What explains the legend?" Still unanswered after forty years.',c:'hi'},
+  'what is the coordinate':{t:'→ The cipher decodes to: "the centre holds the gate". Coordinate: 0.5, 0.5. The Gate.',c:'bright'},
+  'centre':{t:'→ The centre: 0.5, 0.5. The gate. All roads lead here. See the Final Gate section.',c:'bright'},
+  'what explains the legend':{t:'→ The cartographer never answered this. He said: "perhaps the legend explains itself, but only once you no longer need it."',c:'hi'},
+  'forty years':{t:'→ The cartographer spent forty years mapping. He said the last map took one day. The first forty years were the preparation.',c:'hi'},
+  'fragment vi':{t:'→ Fragment VI is locked behind the final gate. 1,000,000 $LOBSTAR to 7M9ddvAfmoDpAvcTeH3NymmC4Ud75LjoYSKEEt9fuEJ2',c:'gold'},
+  'help':{t:'→ Read the fragments. Study the cipher. Explore the map. The terminal logs all valid passages. Try: territory names, questions, coordinates.',c:'dim'},
+};
+
+const pinp=document.getElementById('puz-input');
+const pout=document.getElementById('puz-output');
+const pbody=document.getElementById('puzzle-body');
+
+pinp.addEventListener('keydown',e=>{
+  if(e.key!=='Enter')return;
+  const v=pinp.value.trim().toLowerCase();
+  if(!v)return;
+
+  const l1=document.createElement('div');
+  l1.className='puz-line';
+  l1.style.color='rgba(74,122,181,0.5)';
+  l1.textContent=`$ "${v}"`;
+  pout.appendChild(l1);
+
+  const r=responses[v]||{
+    t:`→ passage logged · coordinate unknown · ${(Math.random()*99+0.5).toFixed(1)}% charted · keep navigating`,
+    c:'dim'
+  };
+
+  const l2=document.createElement('div');
+  l2.className=`puz-line ${r.c}`;
+  l2.textContent=r.t;
+  pout.appendChild(l2);
+
+  const sp=document.createElement('div');
+  sp.className='puz-gap';
+  pout.appendChild(sp);
+
+  pbody.scrollTop=pbody.scrollHeight;
+  pinp.value='';
+});
+
+// ── GATE VERIFICATION ────────────────────────
+function verifyGate(){
+  const tx=document.getElementById('vb-tx').value.trim();
+  const wallet=document.getElementById('vb-wallet').value.trim();
+  const result=document.getElementById('vb-result');
+
+  if(!tx||!wallet){
+    result.textContent='→ Both fields required. Transaction signature and wallet address.';
+    result.style.color='var(--red)';
+    return;
+  }
+  if(tx.length<20){
+    result.textContent='→ Invalid transaction signature format.';
+    result.style.color='var(--red)';
+    return;
+  }
+
+  result.textContent='→ Checking ledger...';
+  result.style.color='var(--dim)';
+
+  setTimeout(()=>{
+    // Simulate ledger check - in reality you'd verify manually
+    result.innerHTML=`→ Submission received.<br>→ TX: ${tx.slice(0,12)}...<br>→ Wallet: ${wallet.slice(0,12)}...<br>→ Ledger verification: manual review within 24h.<br>→ If confirmed: Fragment VI will be unlocked.`;
+    result.style.color='var(--gold)';
+  },1800);
+}
+
+// ── SCROLL REVEAL ────────────────────────────
+function initReveal(){
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('on'); });
+  },{threshold:0.08});
+  document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+}
+
+// ── SECRET: type 'terra' ─────────────────────
+let sbuf='';
+document.addEventListener('keydown',e=>{
+  sbuf=(sbuf+e.key.toLowerCase()).slice(-5);
+  if(sbuf==='terra'){
+    const m=document.createElement('div');
+    m.style.cssText=`position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+      font-family:'Space Mono',monospace;font-size:12px;color:rgba(184,212,240,0.9);
+      letter-spacing:0.3em;text-align:center;z-index:9999;line-height:3;
+      background:#030508;border:1px solid rgba(74,122,181,0.3);padding:50px 70px;
+      transition:opacity 2s;max-width:90vw`;
+    m.innerHTML=`YOU FOUND THE SECOND NOTE<br><br>
+      <span style="color:rgba(74,122,181,0.7);font-size:10px">
+      NOTE II:<br>"the territory is not waiting for you to map it.<br>
+      it is waiting for you to stop trying."<br><br>
+      _notes_remaining: 1<br>_look: the cartographer's final departure point
+      </span>`;
+    document.body.appendChild(m);
+    setTimeout(()=>{ m.style.opacity='0'; setTimeout(()=>m.remove(),2000); },7000);
+  }
+});
+</script>
+</body>
+</html>
